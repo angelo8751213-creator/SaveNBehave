@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Save N Behave — Smart Budget</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Colors: #42002E, #590053, #720137, #5E0009, #46000D */
+  :root{
+    --c1:#42002E; --c2:#590053; --c3:#720137; --c4:#5E0009; --c5:#46000D;
+    --muted: rgba(255,255,255,0.78);
+    --glass: rgba(255,255,255,0.04);
+    --radius:12px; --maxw:1100px;
+  }
+  *{box-sizing:border-box;font-family:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,Arial;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    /* Background: gradient overlay on top of the provided image to preserve contrast */
+    background-image: linear-gradient(180deg, rgba(66,0,46,0.85) 0%, rgba(89,0,83,0.65) 45%, rgba(114,1,55,0.6) 100%),
+                      url('https://i.pinimg.com/1200x/ca/ef/c7/caefc77811c8e4e6f66cff1bc95b26cf.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    color:#fff;padding:28px;display:flex;justify-content:center;-webkit-font-smoothing:antialiased;
+  }
+  .app{width:100%;max-width:var(--maxw)}
+  header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+        background:linear-gradient(135deg,var(--c3),var(--c2));font-weight:700;font-size:18px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  nav{display:flex;gap:8px;flex-wrap:wrap}
+  .nav-btn{background:linear-gradient(180deg,var(--glass),transparent);border:1px solid rgba(255,255,255,0.06);
+          padding:8px 12px;border-radius:10px;color:#fff;text-decoration:none;cursor:pointer;font-size:13px}
+  .nav-btn.active{box-shadow:0 10px 30px rgba(0,0,0,.45);transform:translateY(-2px)}
+  main{display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start}
+  .panel{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,0.04)}
+  h2{font-size:18px}
+  label{font-size:13px;color:var(--muted)}
+  input[type="number"], input[type="text"], textarea, select{
+    width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);
+    background:rgba(0,0,0,0.12);color:#fff;outline:none;margin-top:8px;font-size:14px;
+  }
+  textarea{min-height:60px;resize:vertical}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .btn{padding:10px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:600;background:linear-gradient(90deg,var(--c3),var(--c2));color:#fff}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+  .btn.alt{background:linear-gradient(90deg,var(--c4),var(--c5))}
+  .two{display:flex;gap:10px}
+  .items-list{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+  .item-row{display:grid;grid-template-columns: 1fr 120px 40px;gap:8px;align-items:center}
+  .item-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+  .split{display:flex;gap:12px;margin-top:12px}
+  .part{flex:1;padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
+  .amt{font-weight:700;font-size:16px;margin-top:6px}
+  .tiny{font-size:12px;color:var(--muted)}
+  .results{margin-top:12px}
+  ul.result-list{margin-top:8px;padding-left:18px}
+  ul.result-list li{margin-bottom:6px}
+  .summary .big{font-weight:700;font-size:22px;margin-top:8px}
+  .history{max-height:260px;overflow:auto;margin-top:8px}
+  .hist-item{padding:8px;border-radius:8px;margin-bottom:8px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
+  .hidden{display:none}
+  .page-title{display:flex;align-items:center;gap:12px}
+  .icon{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center}
+  footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
+  @media (max-width:980px){main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">SNB</div>
+        <div>
+          <h1>Save N Behave</h1>
+          <div class="tiny">Students' personal smart budgeting (needs prioritized)</div>
+        </div>
+      </div>
+
+      <nav id="nav">
+        <button class="nav-btn active" data-page="home">Home</button>
+        <button class="nav-btn" data-page="history">History</button>
+        <button class="nav-btn" data-page="settings">Settings</button>
+        <button class="nav-btn" data-page="about">About</button>
+        <button class="nav-btn" data-page="terms">Terms</button>
+        <button class="nav-btn" data-page="credits">Credits</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- LEFT: pages area -->
+      <section id="pages">
+
+        <!-- HOME PAGE -->
+        <div id="home" class="panel page">
+          <div class="page-title">
+            <div class="icon" aria-hidden>
+              <!-- calculator icon -->
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="2" width="18" height="20" rx="2" stroke="white" stroke-opacity="0.9"/><rect x="7" y="6" width="10" height="3" rx="1" fill="white" opacity="0.14"/></svg>
+            </div>
+            <div>
+              <h2>Quick Budget — Itemized Needs & Wants</h2>
+              <div class="tiny">Enter your total money, add items and their estimated budgets, then Calculate.</div>
+            </div>
+          </div>
+
+          <!-- Money inputs -->
+          <div style="margin-top:12px">
+            <label>Current money (₱)</label>
+            <div class="row">
+              <input id="moneyInput" type="number" min="0" step="0.01" placeholder="e.g. 1500" />
+              <button class="btn" id="calculateBtn">Calculate</button>
+            </div>
+
+            <div style="margin-top:10px">
+              <label>Add income (₱)</label>
+              <div class="row">
+                <input id="addMoneyInput" type="number" min="0" step="0.01" placeholder="Add more money" />
+                <button class="btn alt" id="addMoneyBtn">Add</button>
+                <button class="btn ghost" id="resetMoneyBtn">Reset Money</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- items creation -->
+          <div style="margin-top:14px" class="two">
+            <div style="flex:1">
+              <label>Needs — add item + estimate</label>
+              <div class="items-list" id="needsContainer">
+                <!-- dynamic rows appear here -->
+              </div>
+              <div style="margin-top:8px" class="row">
+                <button class="btn" id="addNeedBtn">+ Add Need</button>
+              </div>
+            </div>
+
+            <div style="flex:1">
+              <label>Wants — add item + estimate</label>
+              <div class="items-list" id="wantsContainer">
+                <!-- dynamic rows -->
+              </div>
+              <div style="margin-top:8px" class="row">
+                <button class="btn" id="addWantBtn">+ Add Want</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- actions -->
+          <div style="margin-top:12px; display:flex;gap:8px; align-items:center">
+            <button class="btn" id="saveAllBtn">Save All</button>
+            <button class="btn ghost" id="clearAllBtn">Clear All (storage)</button>
+            <div class="tiny" style="margin-left:10px">Saved locally in this browser.</div>
+          </div>
+
+          <!-- Results -->
+          <div style="margin-top:14px" class="results">
+            <div class="split">
+              <div class="part">
+                <h4>Allocations</h4>
+                <div class="tiny">Needs total: <span id="needsTotal">₱0.00</span></div>
+                <div class="tiny">Wants total: <span id="wantsTotal">₱0.00</span></div>
+                <div class="amt" id="allocNeedsAmt">₱0.00</div>
+                <div class="tiny" id="allocNotice"></div>
+              </div>
+              <div class="part">
+                <h4>Summary</h4>
+                <div class="tiny">Total money</div>
+                <div class="big" id="summaryMoney">₱0.00</div>
+                <div class="tiny" style="margin-top:8px">Remaining</div>
+                <div style="font-weight:700" id="remainingMoney">₱0.00</div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px">
+              <h4>Detailed results (bullet form)</h4>
+              <div style="margin-top:8px">
+                <strong>Needs</strong>
+                <ul id="needsResultList" class="result-list"></ul>
+                <strong>Wants</strong>
+                <ul id="wantsResultList" class="result-list"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTORY PAGE -->
+        <div id="history" class="panel page hidden">
+          <div class="page-title">
+            <div class="icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 6v6l4 2" stroke="white"/></svg>
+            </div>
+            <div><h2>History</h2><div class="tiny">Activity & calculation log</div></div>
+          </div>
+          <div style="margin-top:12px" class="history" id="calcHistory"></div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn" id="exportHistoryBtn">Export CSV</button>
+            <button class="btn ghost" id="clearHistoryBtn">Clear History</button>
+          </div>
+        </div>
+
+        <!-- SETTINGS PAGE -->
+        <div id="settings" class="panel page hidden">
+          <div class="page-title">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" stroke="white"/></svg>
+            </div>
+            <div><h2>Settings</h2><div class="tiny">Customize allocation behavior</div></div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Default split (Needs %)</label>
+            <div class="row">
+              <input id="settingsNeedsPct" type="number" min="0" max="100" step="1" value="70" />
+              <div class="tiny">Wants = 100 - Needs</div>
+            </div>
+
+            <label style="margin-top:10px">Minimum wants reservation (%)</label>
+            <div class="row">
+              <input id="minWantsPct" type="number" min="0" max="50" step="1" value="5" />
+              <div class="tiny">When funds low, reserve this percent for wants if possible.</div>
+            </div>
+
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn" id="saveSettingsBtn">Save Settings</button>
+              <button class="btn ghost" id="resetSettingsBtn">Reset Defaults</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABOUT -->
+        <div id="about" class="panel page hidden">
+          <div class="page-title">
+            <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="white"/></svg></div>
+            <div><h2>About</h2><div class="tiny">What Save N Behave does</div></div>
+          </div>
+          <div style="margin-top:12px" class="tiny">
+            <p>Save N Behave helps students allocate their money to needs and wants by itemized budgets. It saves your data locally for personal tracking and prioritizes needs when funds are tight.</p>
+            <p style="margin-top:8px">This is a single-file starter app you can edit for your performance task.</p>
+          </div>
+        </div>
+
+        <!-- TERMS -->
+        <div id="terms" class="panel page hidden">
+          <div class="page-title">
+            <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="white"/></svg></div>
+            <div><h2>Terms &amp; Conditions</h2><div class="tiny">Short and simple</div></div>
+          </div>
+          <div style="margin-top:12px" class="tiny">
+            <p>Data is stored locally in your browser storage (localStorage). This tool provides suggested allocations for learning and is not professional financial advice.</p>
+            <div style="margin-top:8px">
+              <h4 style="margin-bottom:6px">Terms &amp; Conditions</h4>
+              <p>By accessing and using this website, you agree to be bound by these Terms and Conditions and all applicable laws and regulations. The website owners reserve the right to modify, update, or remove any content or feature at any time without prior notice. All materials, including text, images, graphics, and other content, are the exclusive property of the website and are protected by intellectual property laws. Unauthorized use, reproduction, or distribution of any material from this site is strictly prohibited. The website and its owners shall not be held liable for any direct or indirect damages arising from your use or inability to use the site. Continued use of this website signifies your full acceptance of these Terms and Conditions and any future amendments.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CREDITS -->
+        <div id="credits" class="panel page hidden">
+          <div class="page-title">
+            <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l3 7h7l-6 4 3 7-7-4-7 4 3-7-6-4h7z" stroke="white"/></svg></div>
+            <div><h2>Credits</h2><div class="tiny">Contributors & tools</div></div>
+          </div>
+          <div style="margin-top:12px" class="tiny">
+            <p>Template by your assistant. Edit freely for your project. Recommended editors: Notepad, VS Code, Replit.</p>
+            <div style="margin-top:8px">
+              <h4 style="margin-bottom:6px">Project Credits</h4>
+              <ul style="padding-left:18px; line-height:1.6">
+                <li><strong>Founder:</strong> Rouven Castro</li>
+                <li><strong>Technical Writer:</strong> Krisha Nabong</li>
+                <li><strong>Resource Manager:</strong> Angelica Navaro</li>
+                <li><strong>Editor:</strong> Joy-Anne Calaguas</li>
+                <li><strong>Finance Head:</strong> Marv Arcilla</li>
+                <li><strong>Graphic Designer:</strong> Anna Mae Aguas</li>
+                <li><strong>Public Relations Officer:</strong> Prince Serrano &amp; Loraine Mendoza</li>
+                <li><strong>Advertising Designer:</strong> Stephanie Tundayag</li>
+                <li><strong>Budget Manager:</strong> Ashley Adriano</li>
+                <li><strong>Social Media Manager:</strong> Jessica Bustillo</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- RIGHT: summary & quick actions -->
+      <aside class="panel summary">
+        <h3>Preview Summary</h3>
+        <div style="margin-top:10px" class="tiny">Total money</div>
+        <div class="big" id="previewTotal">₱0.00</div>
+
+        <div style="margin-top:10px" class="tiny">Allocated to Needs</div>
+        <div id="previewNeeds" class="amt">₱0.00</div>
+
+        <div style="margin-top:8px" class="tiny">Allocated to Wants</div>
+        <div id="previewWants" class="amt">₱0.00</div>
+
+        <div style="margin-top:10px" class="tiny">Remaining</div>
+        <div id="previewRemain" style="font-weight:700">₱0.00</div>
+
+        <div style="margin-top:12px" class="tiny">Quick actions</div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="btn" id="quickSaveBtn">Quick Save</button>
+          <button class="btn ghost" id="quickClearBtn">Quick Clear</button>
+        </div>
+
+        <div style="margin-top:12px" class="tiny">Recent activity</div>
+        <div class="history" id="smallLog">
+          <div class="tiny muted">No activity yet</div>
+        </div>
+
+        <footer><div style="margin-top:12px">Save N Behave • &copy; <span id="year"></span></div></footer>
+      </aside>
+
+    </main>
+
+    <footer style="margin-top:14px" class="tiny">Tip: use "+ Add Need/Wants" to create multiple lines. Click Calculate to allocate.</footer>
+  </div>
+
+<script>
+/* Single-file Save N Behave — itemized needs & wants with prioritization + min wants reserve */
+
+/* ================
+   Helper & state
+   ================ */
+const KEY_APP = 'sn_saveNbehave_item_v2';
+const KEY_LOG = 'sn_saveNbehave_log_v2';
+const KEY_SETTINGS = 'sn_saveNbehave_set_v2';
+
+let state = {
+  totalMoney: 0.00,
+  needs: [], // array of {id,name,estimate,allocated}
+  wants: [], // same
+  needsPct: 70,
+  wantsPct: 30,
+  minWantsPct: 5  // minimum wants reserve percent when possible
+};
+
+// DOM refs
+const pages = document.querySelectorAll('.page');
+const navButtons = document.querySelectorAll('.nav-btn');
+const moneyInput = document.getElementById('moneyInput');
+const addMoneyInput = document.getElementById('addMoneyInput');
+const addMoneyBtn = document.getElementById('addMoneyBtn');
+const resetMoneyBtn = document.getElementById('resetMoneyBtn');
+const calculateBtn = document.getElementById('calculateBtn');
+const needsContainer = document.getElementById('needsContainer');
+const wantsContainer = document.getElementById('wantsContainer');
+const addNeedBtn = document.getElementById('addNeedBtn');
+const addWantBtn = document.getElementById('addWantBtn');
+const saveAllBtn = document.getElementById('saveAllBtn');
+const clearAllBtn = document.getElementById('clearAllBtn');
+
+const needsTotalEl = document.getElementById('needsTotal');
+const wantsTotalEl = document.getElementById('wantsTotal');
+const allocNeedsAmt = document.getElementById('allocNeedsAmt');
+const allocNotice = document.getElementById('allocNotice');
+const summaryMoney = document.getElementById('summaryMoney');
+const remainingMoney = document.getElementById('remainingMoney');
+const needsResultList = document.getElementById('needsResultList');
+const wantsResultList = document.getElementById('wantsResultList');
+
+const previewTotal = document.getElementById('previewTotal');
+const previewNeeds = document.getElementById('previewNeeds');
+const previewWants = document.getElementById('previewWants');
+const previewRemain = document.getElementById('previewRemain');
+const smallLog = document.getElementById('smallLog');
+
+const calcHistory = document.getElementById('calcHistory');
+const exportHistoryBtn = document.getElementById('exportHistoryBtn');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+const settingsNeedsPct = document.getElementById('settingsNeedsPct');
+const minWantsPctInput = document.getElementById('minWantsPct');
+const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+
+const quickSaveBtn = document.getElementById('quickSaveBtn');
+const quickClearBtn = document.getElementById('quickClearBtn');
+
+document.getElementById('year').textContent = new Date().getFullYear();
+
+/* ---------- Utilities ---------- */
+function uid(){ return 'id'+Math.random().toString(36).slice(2,9); }
+function moneyRound(n){ return Math.round(Number(n || 0) * 100) / 100; }
+function fmt(n){ n = Number(n || 0); const cents = Math.round(n*100); const fixed = (cents/100).toFixed(2); let p = fixed.split('.'); p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return '₱' + p.join('.'); }
+
+/* ---------- storage ---------- */
+function load(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY_APP));
+    if(s) state = Object.assign(state, s);
+  }catch(e){}
+  try{
+    const se = JSON.parse(localStorage.getItem(KEY_SETTINGS));
+    if(se){
+      state.needsPct = se.needsPct ?? state.needsPct;
+      state.wantsPct = 100 - state.needsPct;
+      state.minWantsPct = se.minWantsPct ?? state.minWantsPct;
+    }
+  }catch(e){}
+  renderAll();
+  renderLog();
+  renderHistory();
+}
+
+function save(){
+  localStorage.setItem(KEY_APP, JSON.stringify(state));
+}
+
+/* ---------- UI: pages routing ---------- */
+navButtons.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    navButtons.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const page = btn.dataset.page;
+    pages.forEach(p => p.id === page ? p.classList.remove('hidden') : p.classList.add('hidden'));
+  });
+});
+
+/* ---------- items UI helpers ---------- */
+function createItemRow(type, item){
+  // type = 'need' or 'want'
+  const container = document.createElement('div');
+  container.className = 'item-row item-card';
+  container.dataset.id = item.id;
+  // name input, estimate input, delete button
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.placeholder = 'Item name';
+  nameInput.value = item.name;
+  nameInput.addEventListener('input', ()=> {
+    item.name = nameInput.value;
+    save();
+    renderAll();
+  });
+
+  const estInput = document.createElement('input');
+  estInput.type = 'number';
+  estInput.min = 0; estInput.step = '0.01';
+  estInput.value = item.estimate || '';
+  estInput.addEventListener('input', ()=> {
+    item.estimate = moneyRound(estInput.value || 0);
+    save();
+    renderAll();
+  });
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn ghost';
+  delBtn.textContent = '✕';
+  delBtn.title = 'Remove';
+  delBtn.addEventListener('click', ()=> {
+    if(!confirm('Remove this item?')) return;
+    if(type === 'need') state.needs = state.needs.filter(i=>i.id !== item.id);
+    else state.wants = state.wants.filter(i => i.id !== item.id);
+    save();
+    renderAll();
+    rebuildLists();
+  });
+
+  container.appendChild(nameInput);
+  container.appendChild(estInput);
+  container.appendChild(delBtn);
+  return container;
+}
+
+function rebuildLists(){
+  needsContainer.innerHTML = '';
+  wantsContainer.innerHTML = '';
+  state.needs.forEach(n=> needsContainer.appendChild(createItemRow('need', n)));
+  state.wants.forEach(w=> wantsContainer.appendChild(createItemRow('want', w)));
+}
+
+/* ---------- Add new items ---------- */
+addNeedBtn.addEventListener('click', ()=>{
+  const item = { id: uid(), name: '', estimate: 0.00, allocated: 0.00 };
+  state.needs.push(item);
+  save();
+  rebuildLists();
+});
+addWantBtn.addEventListener('click', ()=>{
+  const item = { id: uid(), name: '', estimate: 0.00, allocated: 0.00 };
+  state.wants.push(item);
+  save();
+  rebuildLists();
+});
+
+/* ---------- money operations ---------- */
+addMoneyBtn.addEventListener('click', ()=>{
+  const add = moneyRound(addMoneyInput.value || 0);
+  if(add <= 0){ alert('Enter amount greater than 0'); return; }
+  state.totalMoney = moneyRound(Number(state.totalMoney || 0) + add);
+  addMoneyInput.value = '';
+  save();
+  renderAll();
+  log(`Added income ${fmt(add)} — total ${fmt(state.totalMoney)}`);
+});
+resetMoneyBtn.addEventListener('click', ()=>{
+  if(!confirm('Reset current money to 0?')) return;
+  state.totalMoney = 0;
+  moneyInput.value = '';
+  save();
+  renderAll();
+  log('Reset money to 0');
+});
+
+/* ---------- parsing UI into state ---------- */
+function readInputsToState(){
+  const mi = Number(moneyInput.value);
+  if(!isNaN(mi) && moneyInput.value !== '') state.totalMoney = moneyRound(mi);
+  // lists are already bound via inputs (we saved on input), but ensure numbers parsed
+  state.needs.forEach(n => n.estimate = moneyRound(n.estimate || 0));
+  state.wants.forEach(w => w.estimate = moneyRound(w.estimate || 0));
+}
+
+/* ---------- core allocation algorithm ---------- */
+/*
+Algorithm:
+1. Compute sumNeeds = sum(need.estimate), sumWants = sum(want.estimate)
+2. If total >= sumNeeds + sumWants -> allocate exactly as estimates.
+3. Else (insufficient):
+   - Compute desiredNeeds = sumNeeds (as requested).
+   - Reserve a minimum wants portion: minWantsReserve = total * (minWantsPct/100)
+   - AvailableForNeeds = total - minWantsReserve (but not below 0)
+   - Attempt to fully fund needs in the order entered using AvailableForNeeds.
+     For each need: allocate min(need.estimate, remainingAvailableForNeeds)
+   - After needs allocated, remainingMoney = total - sum(allocatedNeeds)
+   - Allocate wants from remainingMoney proportionally to their requested amounts,
+     but we keep them ordered: allocate min(want.estimate, remaining) iteratively.
+   - If requested minWantsReserve impossible (e.g., total too small to allow reserve),
+     wants may be zero; needs get priority.
+This implements "needs prioritized" while "always give a portion to wants" via minWantsPct if possible.
+*/
+function allocate(){
+  readInputsToState();
+  const total = moneyRound(state.totalMoney || 0);
+  const sumNeeds = moneyRound(state.needs.reduce((s,i)=> s + Number(i.estimate || 0), 0));
+  const sumWants = moneyRound(state.wants.reduce((s,i)=> s + Number(i.estimate || 0), 0));
+  // reset allocations
+  state.needs.forEach(n=> n.allocated = 0);
+  state.wants.forEach(w=> w.allocated = 0);
+
+  // quick enough case
+  if(total >= moneyRound(sumNeeds + sumWants)){
+    state.needs.forEach(n => n.allocated = moneyRound(n.estimate || 0));
+    state.wants.forEach(w => w.allocated = moneyRound(w.estimate || 0));
+    save();
+    const remaining = moneyRound(total - (sumNeeds + sumWants));
+    return { notice:'All items funded as requested.', total, allocatedNeeds: sumNeeds, allocatedWants: sumWants, remaining };
+  }
+
+  // insufficient funds
+  // compute minimum wants reserve
+  const minWantsReserve = moneyRound(total * (Number(state.minWantsPct || 0) / 100));
+  let availableForNeeds = moneyRound(total - minWantsReserve);
+  if(availableForNeeds < 0) availableForNeeds = 0;
+
+  // fund needs in order
+  let allocatedNeeds = 0;
+  for(let i=0;i<state.needs.length;i++){
+    const need = state.needs[i];
+    const wantTo = moneyRound(need.estimate || 0);
+    const give = Math.min(wantTo, availableForNeeds);
+    need.allocated = give;
+    availableForNeeds = moneyRound(availableForNeeds - give);
+    allocatedNeeds = moneyRound(allocatedNeeds + give);
+  }
+
+  // compute remaining funds (could be minWantsReserve + leftover from needs funding)
+  let remainingForWants = moneyRound(total - allocatedNeeds);
+  // ensure at least minWantsReserve if possible: if remainingForWants >= minWantsReserve, OK
+  // allocate wants in order up to their estimates
+  let allocatedWants = 0;
+  for(let j=0;j<state.wants.length && remainingForWants>0;j++){
+    const want = state.wants[j];
+    const wantTo = moneyRound(want.estimate || 0);
+    const give = Math.min(wantTo, remainingForWants);
+    want.allocated = give;
+    remainingForWants = moneyRound(remainingForWants - give);
+    allocatedWants = moneyRound(allocatedWants + give);
+  }
+
+  const remaining = moneyRound(total - (allocatedNeeds + allocatedWants));
+  let notice = '⚠️ Not enough funds — needs prioritized.';
+  if(allocatedWants > 0) notice += ' Some wants received funds.';
+  else notice += ' Wants received no funds.';
+
+  save();
+  return { notice, total, allocatedNeeds, allocatedWants, remaining };
+}
+
+/* ---------- rendering ---------- */
+function renderAll(){
+  // render lists in UI
+  rebuildLists();
+  // totals
+  const sumNeeds = moneyRound(state.needs.reduce((s,i)=> s + Number(i.estimate || 0), 0));
+  const sumWants = moneyRound(state.wants.reduce((s,i)=> s + Number(i.estimate || 0), 0));
+  needsTotalEl.textContent = fmt(sumNeeds);
+  wantsTotalEl.textContent = fmt(sumWants);
+  // preview
+  previewTotal.textContent = fmt(state.totalMoney);
+  // compute current allocation preview (without saving allocations to items)
+  const alloc = allocate(); // allocate does save allocations now
+  previewNeeds.textContent = fmt(alloc.allocatedNeeds);
+  previewWants.textContent = fmt(alloc.allocatedWants);
+  previewRemain.textContent = fmt(alloc.remaining);
+  summaryMoney.textContent = fmt(alloc.total);
+  allocNeedsAmt.textContent = fmt(alloc.allocatedNeeds);
+  remainingMoney.textContent = fmt(alloc.remaining);
+  allocNotice.textContent = alloc.notice;
+
+  // result lists in bullet form
+  needsResultList.innerHTML = '';
+  wantsResultList.innerHTML = '';
+  state.needs.forEach(n => {
+    const li = document.createElement('li');
+    const name = n.name.trim() || '(Unnamed)';
+    li.textContent = `${name} — ${fmt(n.allocated)}${ (n.allocated < (n.estimate||0)) ? ' (partial)' : '' }`;
+    needsResultList.appendChild(li);
+  });
+  state.wants.forEach(w => {
+    const li = document.createElement('li');
+    const name = w.name.trim() || '(Unnamed)';
+    li.textContent = `${name} — ${fmt(w.allocated)}${ (w.allocated < (w.estimate||0)) ? ' (partial/none)' : '' }`;
+    wantsResultList.appendChild(li);
+  });
+}
+
+/* ---------- logging ---------- */
+function log(text){
+  const arr = JSON.parse(localStorage.getItem(KEY_LOG) || '[]');
+  arr.unshift({text, date:new Date().toISOString()});
+  if(arr.length>200) arr.splice(200);
+  localStorage.setItem(KEY_LOG, JSON.stringify(arr));
+  renderLog();
+  renderHistory();
+}
+function renderLog(){
+  const arr = JSON.parse(localStorage.getItem(KEY_LOG) || '[]');
+  smallLog.innerHTML = '';
+  if(arr.length===0){ smallLog.innerHTML = '<div class="tiny">No activity yet</div>'; return; }
+  arr.slice(0,6).forEach(item=>{
+    const d = document.createElement('div'); d.className='hist-item';
+    d.innerHTML = `<div style="font-weight:600">${item.text}</div><div class="tiny" style="margin-top:6px">${new Date(item.date).toLocaleString()}</div>`;
+    smallLog.appendChild(d);
+  });
+}
+function renderHistory(){
+  const arr = JSON.parse(localStorage.getItem(KEY_LOG) || '[]');
+  calcHistory.innerHTML = '';
+  if(arr.length===0){ calcHistory.innerHTML = '<div class="tiny">No history yet</div>'; return; }
+  arr.forEach(item=>{
+    const d = document.createElement('div'); d.className='hist-item';
+    d.innerHTML = `<div style="font-weight:600">${item.text}</div><div class="tiny" style="margin-top:6px">${new Date(item.date).toLocaleString()}</div>`;
+    calcHistory.appendChild(d);
+  });
+}
+
+/* ---------- actions ---------- */
+calculateBtn.addEventListener('click', ()=>{
+  readInputsToState();
+  const result = allocate(); // saves
+  renderAll();
+    log(`Calculated — Total ${fmt(result.total)} • Needs ${fmt(result.allocatedNeeds)} • Wants ${fmt(result.allocatedWants)}`);
+});
+
+saveAllBtn.addEventListener('click', ()=>{
+  readInputsToState();
+  save();
+  renderAll();
+  alert('Saved to your browser.');
+  log('Saved data and items');
+});
+
+clearAllBtn.addEventListener('click', ()=>{
+  if(!confirm('Clear all saved data (money, items, settings)?')) return;
+  localStorage.removeItem(KEY_APP);
+  localStorage.removeItem(KEY_LOG);
+  localStorage.removeItem(KEY_SETTINGS);
+  state = { totalMoney:0, needs:[], wants:[], needsPct:70, wantsPct:30, minWantsPct:5 };
+  moneyInput.value = '';
+  addMoneyInput.value = '';
+  rebuildLists();
+  renderAll();
+  renderLog();
+  renderHistory();
+  alert('All cleared.');
+  log('Cleared all data');
+});
+
+exportHistoryBtn.addEventListener('click', ()=>{
+  const arr = JSON.parse(localStorage.getItem(KEY_LOG) || '[]');
+  if(arr.length===0){ alert('No history'); return; }
+  const csv = arr.map(r => [`"${r.text.replace(/"/g,'""')}"`, new Date(r.date).toLocaleString()].join(','));
+  const blob = new Blob([['Text','Date'].join(','), ...csv].join('\n'), {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'snb_history.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+clearHistoryBtn.addEventListener('click', ()=>{
+  if(!confirm('Clear activity history?')) return;
+  localStorage.removeItem(KEY_LOG);
+  renderLog();
+  renderHistory();
+  log('Cleared history');
+});
+
+/* ---------- settings ---------- */
+saveSettingsBtn.addEventListener('click', ()=>{
+  let n = parseInt(settingsNeedsPct.value || settingsNeedsPct.defaultValue);
+  if(isNaN(n) || n<0) n = 70; if(n>100) n=100;
+  state.needsPct = n; state.wantsPct = 100-n;
+  const m = parseInt(minWantsPctInput.value || minWantsPctInput.defaultValue);
+  state.minWantsPct = (isNaN(m)?5:Math.max(0,Math.min(50,m)));
+  localStorage.setItem(KEY_SETTINGS, JSON.stringify({needsPct:state.needsPct, minWantsPct:state.minWantsPct}));
+  renderAll();
+  alert('Settings saved.');
+  log(`Saved settings: needs ${state.needsPct}% minWants ${state.minWantsPct}%`);
+});
+
+resetSettingsBtn.addEventListener('click', ()=>{
+  if(!confirm('Reset settings to defaults (70% needs, 5% min wants)?')) return;
+  state.needsPct = 70; state.wantsPct = 30; state.minWantsPct = 5;
+  settingsNeedsPct.value = 70; minWantsPctInput.value = 5;
+  localStorage.removeItem(KEY_SETTINGS);
+  renderAll();
+  log('Reset settings');
+});
+
+/* ---------- quick actions ---------- */
+quickSaveBtn.addEventListener('click', ()=>{ save(); alert('Quick saved.'); log('Quick saved'); });
+quickClearBtn.addEventListener('click', ()=>{ if(!confirm('Quick clear all saved data?')) return; clearAllBtn.click(); });
+
+/* ---------- helpers on load ---------- */
+function initDefaults(){
+  // if no items exist, create 1 sample need & want
+  if(state.needs.length===0 && state.wants.length===0){
+    state.needs.push({id:uid(), name:'Food', estimate:200, allocated:0});
+    state.wants.push({id:uid(), name:'Snacks', estimate:50, allocated:0});
+  }
+  settingsNeedsPct.value = state.needsPct;
+  minWantsPctInput.value = state.minWantsPct;
+  rebuildLists();
+  renderAll();
+}
+
+/* ---------- initialize ---------- */
+load();
+initDefaults();
+
+/* autosave on leave */
+window.addEventListener('beforeunload', ()=> save());
+</script>
+</body>
+</html>
